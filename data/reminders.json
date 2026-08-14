@@ -1,0 +1,28 @@
+[
+  {
+    "id": "bbfaf79b-0de0-420b-9155-8fe36a2ee112",
+    "phone": "+919999999999",
+    "reminder_text": "Test the Recall AI hackathon demo",
+    "remind_at": "2026-08-14T10:23:08.357Z",
+    "status": "completed",
+    "created_at": "2026-08-14T08:37:05.788Z",
+    "updated_at": "2026-08-14T10:18:10.030Z",
+    "last_call_at": null,
+    "last_error": null,
+    "reschedule_count": 5,
+    "completed_at": "2026-08-14T10:18:10.030Z"
+  },
+  {
+    "id": "dcf94faf-746a-4b1b-ac72-f87a0cd841f0",
+    "phone": "+919730718197",
+    "reminder_text": "Public Cloudflare test",
+    "remind_at": "2026-08-14T10:32:36.003Z",
+    "status": "completed",
+    "created_at": "2026-08-14T09:27:44.168Z",
+    "updated_at": "2026-08-14T10:27:36.929Z",
+    "last_call_at": null,
+    "last_error": null,
+    "reschedule_count": 1,
+    "completed_at": "2026-08-14T10:27:36.929Z"
+  }
+]

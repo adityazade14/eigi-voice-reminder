@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recall AI — Voice Reminder Agent</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: #080b12;
+      color: #eef2ff;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 42px 20px 80px; }
+    .hero {
+      padding: 28px;
+      border: 1px solid #293042;
+      border-radius: 26px;
+      background: linear-gradient(135deg, rgba(73,84,255,.17), rgba(20,25,40,.8));
+      box-shadow: 0 24px 80px rgba(0,0,0,.28);
+      margin-bottom: 26px;
+    }
+    .tag {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      border: 1px solid #38415c;
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #b8c2ff;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #69f0ae; box-shadow: 0 0 16px #69f0ae; }
+    h1 { font-size: clamp(34px, 6vw, 62px); line-height: .98; margin: 22px 0 12px; letter-spacing: -2px; }
+    .sub { max-width: 750px; color: #aab2c8; font-size: 17px; line-height: 1.6; }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .step {
+      border: 1px solid #2a3142;
+      background: rgba(10,13,22,.75);
+      padding: 15px;
+      border-radius: 16px;
+      color: #ccd3e8;
+      font-size: 14px;
+    }
+    .num { color: #8391ff; font-size: 12px; margin-bottom: 8px; font-weight: 700; }
+    .head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin: 32px 0 14px;
+    }
+    .head h2 { margin: 0; font-size: 22px; }
+    .count { color: #8e98af; font-size: 13px; }
+    #reminders { display: grid; gap: 12px; }
+    .card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      border: 1px solid #252c3d;
+      border-radius: 18px;
+      padding: 18px;
+      background: #10141f;
+    }
+    .text { font-weight: 700; font-size: 17px; margin-bottom: 7px; }
+    .meta { color: #8791a9; font-size: 13px; line-height: 1.55; }
+    .pill {
+      display: inline-block; padding: 5px 9px; border: 1px solid #343d53;
+      border-radius: 999px; margin-top: 10px; font-size: 11px; text-transform: uppercase;
+      letter-spacing: .7px; color: #bac5ff;
+    }
+    .actions { display: flex; align-items: center; gap: 8px; }
+    button {
+      cursor: pointer; border: 1px solid #35405a; background: #171d2a; color: #f0f3ff;
+      padding: 9px 11px; border-radius: 11px; font-weight: 600;
+    }
+    button:hover { background: #222a3c; }
+    .empty {
+      border: 1px dashed #30384c; color: #808aa1; border-radius: 18px;
+      padding: 42px; text-align: center;
+    }
+    .footer { margin-top: 26px; color: #646f88; font-size: 12px; }
+    @media(max-width:760px) {
+      .flow { grid-template-columns: 1fr 1fr; }
+      .card { grid-template-columns: 1fr; }
+      .actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="tag"><span class="dot"></span> Voice agent online</div>
+      <h1>Recall AI</h1>
+      <div class="sub">
+        A conversational reminder that does more than send a notification:
+        you call it, tell it what matters, and it calls you back. Complete or
+        reschedule the reminder naturally during the same voice conversation.
+      </div>
+      <div class="flow">
+        <div class="step"><div class="num">01</div>Call the setter agent</div>
+        <div class="step"><div class="num">02</div>Speak reminder + time</div>
+        <div class="step"><div class="num">03</div>AI calls you back</div>
+        <div class="step"><div class="num">04</div>Complete or snooze by voice</div>
+      </div>
+    </section>
+
+    <div class="head">
+      <h2>Live reminders</h2>
+      <div class="count" id="count">Loading…</div>
+    </div>
+    <section id="reminders"></section>
+
+    <div class="footer">
+      Live dashboard · refreshes every 2 seconds · powered by eigi.ai voice agents
+    </div>
+  </main>
+
+  <script>
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+      }[m]));
+    }
+
+    function formatTime(v) {
+      try {
+        return new Date(v).toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          dateStyle: "medium",
+          timeStyle: "medium"
+        });
+      } catch { return v; }
+    }
+
+    async function complete(id) {
+      await fetch(`/api/reminders/${id}/complete`, { method: "POST" });
+      load();
+    }
+
+    async function snooze(id) {
+      await fetch(`/api/reminders/${id}/snooze`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({minutes: 5})
+      });
+      load();
+    }
+
+    async function load() {
+      const r = await fetch("/api/reminders");
+      const items = await r.json();
+      document.getElementById("count").textContent =
+        `${items.length} reminder${items.length === 1 ? "" : "s"}`;
+
+      const el = document.getElementById("reminders");
+      if (!items.length) {
+        el.innerHTML = `<div class="empty">No reminders yet. Call your eigi.ai setter agent to create the first one.</div>`;
+        return;
+      }
+
+      el.innerHTML = items.map(x => `
+        <article class="card">
+          <div>
+            <div class="text">${esc(x.reminder_text)}</div>
+            <div class="meta">
+              ${esc(x.phone)}<br/>
+              Due: ${esc(formatTime(x.remind_at))}
+              ${x.last_error ? `<br/>Error: ${esc(x.last_error)}` : ""}
+            </div>
+            <div class="pill">${esc(x.status)}</div>
+          </div>
+          <div class="actions">
+            <button onclick="snooze('${x.id}')">+5 min</button>
+            <button onclick="complete('${x.id}')">Complete</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    load();
+    setInterval(load, 2000);
+  </script>
+</body>
+</html>
